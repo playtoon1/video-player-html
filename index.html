@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Video Player</title>
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
       background-color: black;
       height: 100%;
       width: 100%;
+      overflow: hidden;
     }
     iframe {
       border: none;
@@ -25,7 +26,17 @@
     const urlParams = new URLSearchParams(window.location.search);
     const video = urlParams.get('video');
     if (video) {
-      document.getElementById('video').src = decodeURIComponent(video);
+      // Dzen.ru için olası parametre ekleme
+      let embedUrl = decodeURIComponent(video);
+      if (embedUrl.includes('dzen.ru')) {
+        // Bu parametreler işe yarayabilir: mute=1, autoplay=1, controls=0
+        if (!embedUrl.includes('?')) {
+          embedUrl += '?autoplay=1&mute=1';
+        } else {
+          embedUrl += '&autoplay=1&mute=1';
+        }
+      }
+      document.getElementById('video').src = embedUrl;
     }
   </script>
 </body>
