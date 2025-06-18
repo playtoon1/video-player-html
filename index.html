@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Oynatıcı</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <video id="videoPlayer" controls autoplay></video>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoUrl = urlParams.get('video');
+
+    if (videoUrl) {
+      const player = document.getElementById('videoPlayer');
+      player.src = decodeURIComponent(videoUrl);
+    } else {
+      document.body.innerHTML = "<h1 style='color:white;text-align:center;'>Video bulunamadı.</h1>";
+    }
+  </script>
+</body>
+</html>
