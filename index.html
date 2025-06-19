@@ -13,13 +13,13 @@
       width: 100%;
       overflow: hidden;
     }
-    
+
     iframe {
       border: none;
       width: 100vw;
       height: 100vh;
     }
-    
+
     .video-container {
       position: fixed;
       top: 0;
@@ -31,41 +31,14 @@
       align-items: center;
       justify-content: center;
     }
-    
-    .controls {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 9999;
-      display: flex;
-      gap: 10px;
-    }
-    
-    .control-button {
-      background-color: rgba(0,0,0,0.6);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 18px;
-    }
-    
-    .control-button:hover {
-      background-color: rgba(255,0,0,0.8);
-    }
-    
+
     .loading {
       color: white;
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 20px;
     }
-    
+
     #debug {
       position: fixed;
       bottom: 10px;
@@ -87,56 +60,42 @@
   <div class="video-container">
     <iframe id="video" allow="autoplay; fullscreen; encrypted-media"></iframe>
   </div>
-  
-  <div class="controls">
-    <button class="control-button" id="refreshBtn" title="Yenile">↻</button>
-    <button class="control-button" id="fullscreenBtn" title="Tam Ekran">⤢</button>
-  </div>
-  
+
   <div id="debug"></div>
-  
+
   <script>
-    // Debug için yardımcı fonksiyon
     function log(message) {
       console.log(message);
       const debug = document.getElementById('debug');
       debug.style.display = 'block';
       debug.innerHTML += message + '<br>';
-      
-      // Sadece son 10 satırı göster
       const lines = debug.innerHTML.split('<br>');
       if (lines.length > 10) {
         debug.innerHTML = lines.slice(lines.length - 10).join('<br>');
       }
     }
-    
-    // Video URL'sini işle ve iframe'e yükle
+
     function loadVideo() {
       const urlParams = new URLSearchParams(window.location.search);
       const video = urlParams.get('video');
-      
       if (!video) {
         log('Video URL parametresi bulunamadı!');
         return;
       }
-      
+
       try {
-        // URL'yi decode et
         let embedUrl = decodeURIComponent(video);
         log(`Orijinal video URL: ${embedUrl}`);
-        
-        // URL'ye göre özel işlemler
+
         if (embedUrl.includes('sibnet')) {
           embedUrl = processSibnetUrl(embedUrl);
         } else if (embedUrl.includes('dzen.ru')) {
           embedUrl = processDzenUrl(embedUrl);
         }
-        
-        // iframe src'sini ayarla
+
         document.getElementById('video').src = embedUrl;
         log(`İşlenmiş URL: ${embedUrl}`);
-        
-        // Video yüklendikten sonra özel işlemler
+
         document.getElementById('video').onload = function() {
           enhanceVideo();
         };
@@ -144,42 +103,31 @@
         log(`Hata: ${error.message}`);
       }
     }
-    
-    // Sibnet URL'lerini işle
+
     function processSibnetUrl(url) {
       log('Sibnet video tespit edildi, işleniyor...');
-      
-      // video formatını shell.php formatına dönüştür
       if (url.includes('/video/') && !url.includes('shell.php')) {
         const videoId = url.split('/video/')[1].split('/')[0];
         url = `https://video.sibnet.ru/shell.php?videoid=${videoId}`;
         log(`Sibnet URL formatı düzeltildi: ${url}`);
       }
-      
       return url;
     }
-    
-    // Dzen URL'lerini işle
+
     function processDzenUrl(url) {
       log('Dzen video tespit edildi, işleniyor...');
-      
-      // Otomatik oynatma parametreleri ekle
       if (!url.includes('?')) {
         url += '?autoplay=1&mute=1';
       } else {
         url += '&autoplay=1&mute=1';
       }
-      
       return url;
     }
-    
-    // Video oynatıcıyı geliştir
+
     function enhanceVideo() {
       try {
         setTimeout(() => {
           const iframe = document.getElementById('video');
-          
-          // Sibnet videolarını geliştir
           if (iframe.src.includes('sibnet')) {
             enhanceSibnetVideo();
           }
@@ -188,16 +136,12 @@
         log(`Video geliştirme hatası: ${error.message}`);
       }
     }
-    
-    // Sibnet videolarını geliştir
+
     function enhanceSibnetVideo() {
       try {
         const iframe = document.getElementById('video');
-        
-        // iframe içeriğine erişmeye çalış
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        
-        // CSS enjekte et
+
         const style = document.createElement('style');
         style.textContent = `
           video, .video-js, .vjs-tech {
@@ -209,62 +153,36 @@
             z-index: 9999 !important;
             background: #000 !important;
           }
-          
+
           .vjs-big-play-button {
             transform: scale(2) !important;
             z-index: 10001 !important;
           }
         `;
         iframeDoc.head.appendChild(style);
-        
-        // Video elementini bul ve oynat
+
         const videos = iframeDoc.querySelectorAll('video');
         for (let i = 0; i < videos.length; i++) {
           videos[i].play();
         }
-        
-        // Play butonlarını bul ve tıkla
+
         const playButtons = iframeDoc.querySelectorAll('.vjs-big-play-button, .vjs-play-control, .play_btn');
         for (let i = 0; i < playButtons.length; i++) {
           playButtons[i].click();
         }
-        
+
         log('Sibnet video geliştirmeleri uygulandı');
       } catch (error) {
-        log(`Sibnet geliştirme hatası: ${error.message} - Aynı kaynaktan olmayan frame erişimine izin verilmiyor olabilir.`);
-        
-        // Alternatif yöntem - postMessage kullanımı
+        log(`Sibnet geliştirme hatası: ${error.message}`);
         log('Alternatif yöntem deneniyor...');
-        
         const iframe = document.getElementById('video');
         iframe.contentWindow.postMessage({
           action: 'enhanceSibnet'
         }, '*');
       }
     }
-    
-    // Yenile butonuna tıklandığında
-    document.getElementById('refreshBtn').addEventListener('click', function() {
-      loadVideo();
-    });
-    
-    // Tam ekran butonuna tıklandığında
-    document.getElementById('fullscreenBtn').addEventListener('click', function() {
-      const iframe = document.getElementById('video');
-      
-      if (iframe.requestFullscreen) {
-        iframe.requestFullscreen();
-      } else if (iframe.webkitRequestFullscreen) {
-        iframe.webkitRequestFullscreen();
-      } else if (iframe.msRequestFullscreen) {
-        iframe.msRequestFullscreen();
-      }
-    });
-    
-    // Sayfa yüklendiğinde videoyu yükle
+
     window.onload = loadVideo;
-    
-    // 5 saniyede bir yenileme yapmayı dene
     setInterval(enhanceVideo, 5000);
   </script>
 </body>
