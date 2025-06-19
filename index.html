@@ -31,29 +31,6 @@
       align-items: center;
       justify-content: center;
     }
-
-    .loading {
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-
-    #debug {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      color: white;
-      background: rgba(0,0,0,0.6);
-      padding: 5px 10px;
-      font-family: monospace;
-      font-size: 12px;
-      z-index: 9999;
-      max-width: 80%;
-      max-height: 100px;
-      overflow-y: auto;
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -61,31 +38,14 @@
     <iframe id="video" allow="autoplay; fullscreen; encrypted-media"></iframe>
   </div>
 
-  <div id="debug"></div>
-
   <script>
-    function log(message) {
-      console.log(message);
-      const debug = document.getElementById('debug');
-      debug.style.display = 'block';
-      debug.innerHTML += message + '<br>';
-      const lines = debug.innerHTML.split('<br>');
-      if (lines.length > 10) {
-        debug.innerHTML = lines.slice(lines.length - 10).join('<br>');
-      }
-    }
-
     function loadVideo() {
       const urlParams = new URLSearchParams(window.location.search);
       const video = urlParams.get('video');
-      if (!video) {
-        log('Video URL parametresi bulunamadı!');
-        return;
-      }
+      if (!video) return;
 
       try {
         let embedUrl = decodeURIComponent(video);
-        log(`Orijinal video URL: ${embedUrl}`);
 
         if (embedUrl.includes('sibnet')) {
           embedUrl = processSibnetUrl(embedUrl);
@@ -94,28 +54,24 @@
         }
 
         document.getElementById('video').src = embedUrl;
-        log(`İşlenmiş URL: ${embedUrl}`);
 
         document.getElementById('video').onload = function() {
           enhanceVideo();
         };
       } catch (error) {
-        log(`Hata: ${error.message}`);
+        // Sessiz hata yönetimi
       }
     }
 
     function processSibnetUrl(url) {
-      log('Sibnet video tespit edildi, işleniyor...');
       if (url.includes('/video/') && !url.includes('shell.php')) {
         const videoId = url.split('/video/')[1].split('/')[0];
         url = `https://video.sibnet.ru/shell.php?videoid=${videoId}`;
-        log(`Sibnet URL formatı düzeltildi: ${url}`);
       }
       return url;
     }
 
     function processDzenUrl(url) {
-      log('Dzen video tespit edildi, işleniyor...');
       if (!url.includes('?')) {
         url += '?autoplay=1&mute=1';
       } else {
@@ -133,7 +89,7 @@
           }
         }, 2000);
       } catch (error) {
-        log(`Video geliştirme hatası: ${error.message}`);
+        // Sessiz hata yönetimi
       }
     }
 
@@ -170,11 +126,8 @@
         for (let i = 0; i < playButtons.length; i++) {
           playButtons[i].click();
         }
-
-        log('Sibnet video geliştirmeleri uygulandı');
       } catch (error) {
-        log(`Sibnet geliştirme hatası: ${error.message}`);
-        log('Alternatif yöntem deneniyor...');
+        // Güvenlik nedeniyle erişilemiyor olabilir
         const iframe = document.getElementById('video');
         iframe.contentWindow.postMessage({
           action: 'enhanceSibnet'
