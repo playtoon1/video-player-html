@@ -1,142 +1,465 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Video Player</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background-color: black;
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-    }
-
-    iframe {
-      border: none;
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .video-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        iframe, video {
+            width: 100%;
+            height: 100%;
+            border: none;
+            object-fit: contain;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 18px;
+            z-index: 1000;
+        }
+        
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff4444;
+            text-align: center;
+            font-size: 16px;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Fullscreen optimizations */
+        .video-container:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .video-container:-moz-full-screen {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .video-container:fullscreen {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* Sibnet specific styles */
+        .sibnet-player {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .sibnet-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+        
+        /* Hide unnecessary elements for all platforms */
+        .ads, .advertisement, .banner, .popup, .overlay,
+        .social-share, .related-videos, .comments,
+        .sidebar, .header, .footer, .navigation {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
 </head>
 <body>
-  <div class="video-container">
-    <iframe id="video" allow="autoplay; fullscreen; encrypted-media"></iframe>
-  </div>
+    <div class="video-container" id="videoContainer">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Video yükleniyor...
+        </div>
+        <div class="error" id="error" style="display: none;">
+            Video yüklenemedi. Lütfen daha sonra tekrar deneyin.
+        </div>
+    </div>
 
-  <script>
-    function loadVideo() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const video = urlParams.get('video');
-      if (!video) return;
-
-      try {
-        let embedUrl = decodeURIComponent(video);
-
-        if (embedUrl.includes('sibnet')) {
-          embedUrl = processSibnetUrl(embedUrl);
-        } else if (embedUrl.includes('dzen.ru')) {
-          embedUrl = processDzenUrl(embedUrl);
+    <script>
+        // URL'den video parametresini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoUrl = urlParams.get('url');
+        const videoTitle = urlParams.get('title') || 'Video';
+        
+        // Sayfa başlığını güncelle
+        document.title = videoTitle;
+        
+        if (!videoUrl) {
+            showError('Video URL\'si bulunamadı.');
+            return;
         }
-
-        document.getElementById('video').src = embedUrl;
-
-        document.getElementById('video').onload = function() {
-          enhanceVideo();
-        };
-      } catch (error) {
-        // Sessiz hata yönetimi
-      }
-    }
-
-    function processSibnetUrl(url) {
-      if (url.includes('/video/') && !url.includes('shell.php')) {
-        const videoId = url.split('/video/')[1].split('/')[0];
-        url = `https://video.sibnet.ru/shell.php?videoid=${videoId}`;
-      }
-      return url;
-    }
-
-    function processDzenUrl(url) {
-      if (!url.includes('?')) {
-        url += '?autoplay=1&mute=1';
-      } else {
-        url += '&autoplay=1&mute=1';
-      }
-      return url;
-    }
-
-    function enhanceVideo() {
-      try {
-        setTimeout(() => {
-          const iframe = document.getElementById('video');
-          if (iframe.src.includes('sibnet')) {
-            enhanceSibnetVideo();
-          }
-        }, 2000);
-      } catch (error) {
-        // Sessiz hata yönetimi
-      }
-    }
-
-    function enhanceSibnetVideo() {
-      try {
-        const iframe = document.getElementById('video');
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-        const style = document.createElement('style');
-        style.textContent = `
-          video, .video-js, .vjs-tech {
-            width: 100% !important;
-            height: 100% !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 9999 !important;
-            background: #000 !important;
-          }
-
-          .vjs-big-play-button {
-            transform: scale(2) !important;
-            z-index: 10001 !important;
-          }
-        `;
-        iframeDoc.head.appendChild(style);
-
-        const videos = iframeDoc.querySelectorAll('video');
-        for (let i = 0; i < videos.length; i++) {
-          videos[i].play();
+        
+        // Video tipini belirle ve oynatıcı oluştur
+        function createPlayer() {
+            const container = document.getElementById('videoContainer');
+            const loading = document.getElementById('loading');
+            
+            try {
+                if (isSibnetUrl(videoUrl)) {
+                    createSibnetPlayer(videoUrl, container, loading);
+                } else if (isYouTubeUrl(videoUrl)) {
+                    createYouTubePlayer(videoUrl, container, loading);
+                } else if (isVimeoUrl(videoUrl)) {
+                    createVimeoPlayer(videoUrl, container, loading);
+                } else if (isDailymotionUrl(videoUrl)) {
+                    createDailymotionPlayer(videoUrl, container, loading);
+                } else if (isDirectVideoUrl(videoUrl)) {
+                    createDirectVideoPlayer(videoUrl, container, loading);
+                } else {
+                    // Genel iframe player
+                    createGenericPlayer(videoUrl, container, loading);
+                }
+            } catch (error) {
+                console.error('Player oluşturma hatası:', error);
+                showError('Video oynatıcı oluşturulamadı.');
+            }
         }
-
-        const playButtons = iframeDoc.querySelectorAll('.vjs-big-play-button, .vjs-play-control, .play_btn');
-        for (let i = 0; i < playButtons.length; i++) {
-          playButtons[i].click();
+        
+        // Sibnet URL kontrolü
+        function isSibnetUrl(url) {
+            return url.includes('sibnet.ru') || url.includes('shell.php?videoid=');
         }
-      } catch (error) {
-        // Güvenlik nedeniyle erişilemiyor olabilir
-        const iframe = document.getElementById('video');
-        iframe.contentWindow.postMessage({
-          action: 'enhanceSibnet'
-        }, '*');
-      }
-    }
-
-    window.onload = loadVideo;
-    setInterval(enhanceVideo, 5000);
-  </script>
+        
+        // YouTube URL kontrolü
+        function isYouTubeUrl(url) {
+            return url.includes('youtube.com') || url.includes('youtu.be');
+        }
+        
+        // Vimeo URL kontrolü
+        function isVimeoUrl(url) {
+            return url.includes('vimeo.com');
+        }
+        
+        // Dailymotion URL kontrolü
+        function isDailymotionUrl(url) {
+            return url.includes('dailymotion.com');
+        }
+        
+        // Direct video URL kontrolü
+        function isDirectVideoUrl(url) {
+            return url.match(/\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)(\?.*)?$/i);
+        }
+        
+        // Sibnet Player - Özel işleme
+        function createSibnetPlayer(url, container, loading) {
+            console.log('Sibnet player oluşturuluyor:', url);
+            
+            // Sibnet URL'sini düzenle
+            let embedUrl = url;
+            
+            // Eğer shell.php linki ise, doğrudan kullan
+            if (url.includes('shell.php?videoid=')) {
+                // URL'yi embed formatına çevir
+                embedUrl = url.replace('shell.php?videoid=', 'video_ext.php?videoid=');
+            }
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'sibnet-frame';
+            iframe.src = embedUrl;
+            iframe.allowFullscreen = true;
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+            iframe.setAttribute('webkitallowfullscreen', 'true');
+            iframe.setAttribute('mozallowfullscreen', 'true');
+            iframe.setAttribute('allowfullscreen', 'true');
+            
+            // Sibnet için özel User-Agent
+            iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-presentation');
+            
+            // Loading event handlers
+            iframe.onload = function() {
+                console.log('Sibnet iframe yüklendi');
+                loading.style.display = 'none';
+                
+                // Sibnet'e özel CSS enjekte et
+                setTimeout(() => {
+                    injectSibnetStyles(iframe);
+                }, 1000);
+            };
+            
+            iframe.onerror = function() {
+                console.error('Sibnet iframe yüklenemedi');
+                showError('Sibnet video yüklenemedi. Alternatif yöntem deneniyor...');
+                
+                // Alternatif yöntem: Direkt URL'yi dene
+                createAlternativeSibnetPlayer(url, container, loading);
+            };
+            
+            // Timeout handler
+            setTimeout(() => {
+                if (loading.style.display !== 'none') {
+                    console.log('Sibnet yükleme timeout, alternatif yöntem deneniyor');
+                    createAlternativeSibnetPlayer(url, container, loading);
+                }
+            }, 10000);
+            
+            container.appendChild(iframe);
+        }
+        
+        // Alternatif Sibnet Player
+        function createAlternativeSibnetPlayer(url, container, loading) {
+            // Mevcut iframe'i temizle
+            const existingIframe = container.querySelector('iframe');
+            if (existingIframe) {
+                existingIframe.remove();
+            }
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'sibnet-frame';
+            iframe.src = url; // Orijinal URL'yi kullan
+            iframe.allowFullscreen = true;
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+            
+            iframe.onload = function() {
+                loading.style.display = 'none';
+            };
+            
+            iframe.onerror = function() {
+                showError('Video yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+            };
+            
+            container.appendChild(iframe);
+        }
+        
+        // Sibnet için özel CSS enjekte etme
+        function injectSibnetStyles(iframe) {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc) {
+                    const style = iframeDoc.createElement('style');
+                    style.textContent = `
+                        body {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            background: #000 !important;
+                            overflow: hidden !important;
+                        }
+                        
+                        video {
+                            width: 100% !important;
+                            height: 100% !important;
+                            object-fit: contain !important;
+                        }
+                        
+                        .ads, .advertisement, .banner, .popup,
+                        .social, .share, .related, .comments {
+                            display: none !important;
+                            visibility: hidden !important;
+                        }
+                        
+                        /* Sibnet player controls */
+                        .sibnet-controls {
+                            position: absolute !important;
+                            bottom: 10px !important;
+                            left: 50% !important;
+                            transform: translateX(-50%) !important;
+                            z-index: 9999 !important;
+                        }
+                    `;
+                    iframeDoc.head.appendChild(style);
+                }
+            } catch (error) {
+                console.log('Sibnet CSS enjekte edilemedi (CORS):', error);
+            }
+        }
+        
+        // YouTube Player
+        function createYouTubePlayer(url, container, loading) {
+            let embedUrl = url;
+            
+            // Normal YouTube URL'sini embed URL'sine çevir
+            if (url.includes('youtube.com/watch?v=')) {
+                const videoId = url.split('v=')[1].split('&')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1`;
+            } else if (url.includes('youtu.be/')) {
+                const videoId = url.split('youtu.be/')[1].split('?')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1`;
+            }
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = embedUrl;
+            iframe.allowFullscreen = true;
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            
+            iframe.onload = () => {
+                loading.style.display = 'none';
+            };
+            
+            container.appendChild(iframe);
+        }
+        
+        // Vimeo Player
+        function createVimeoPlayer(url, container, loading) {
+            let embedUrl = url;
+            
+            if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com')) {
+                const videoId = url.split('vimeo.com/')[1].split('?')[0];
+                embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=0&controls=1`;
+            }
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = embedUrl;
+            iframe.allowFullscreen = true;
+            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+            
+            iframe.onload = () => {
+                loading.style.display = 'none';
+            };
+            
+            container.appendChild(iframe);
+        }
+        
+        // Dailymotion Player
+        function createDailymotionPlayer(url, container, loading) {
+            let embedUrl = url;
+            
+            if (url.includes('dailymotion.com/video/') && !url.includes('dailymotion.com/embed/')) {
+                const videoId = url.split('video/')[1].split('?')[0];
+                embedUrl = `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=0`;
+            }
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = embedUrl;
+            iframe.allowFullscreen = true;
+            iframe.allow = 'autoplay; fullscreen';
+            
+            iframe.onload = () => {
+                loading.style.display = 'none';
+            };
+            
+            container.appendChild(iframe);
+        }
+        
+        // Direct Video Player
+        function createDirectVideoPlayer(url, container, loading) {
+            const video = document.createElement('video');
+            video.src = url;
+            video.controls = true;
+            video.autoplay = true;
+            video.muted = false;
+            video.playsInline = true;
+            
+            video.onloadeddata = () => {
+                loading.style.display = 'none';
+            };
+            
+            video.onerror = () => {
+                showError('Video yüklenemedi.');
+            };
+            
+            container.appendChild(video);
+        }
+        
+        // Generic Player
+        function createGenericPlayer(url, container, loading) {
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.allowFullscreen = true;
+            iframe.allow = 'autoplay; fullscreen';
+            
+            iframe.onload = () => {
+                loading.style.display = 'none';
+            };
+            
+            iframe.onerror = () => {
+                showError('Video yüklenemedi.');
+            };
+            
+            container.appendChild(iframe);
+        }
+        
+        // Hata göster
+        function showError(message) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            
+            loading.style.display = 'none';
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+        
+        // Sayfa yüklendiğinde oynatıcıyı oluştur
+        window.addEventListener('load', createPlayer);
+        
+        // Fullscreen API
+        function requestFullscreen() {
+            const container = document.getElementById('videoContainer');
+            
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            }
+        }
+        
+        // Otomatik landscape mode (mobil için)
+        if (window.innerHeight > window.innerWidth) {
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {
+                    console.log('Orientation lock failed');
+                });
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f' || e.key === 'F') {
+                requestFullscreen();
+            } else if (e.key === 'Escape') {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+        
+        // Console log for debugging
+        console.log('Video Player initialized for URL:', videoUrl);
+    </script>
 </body>
 </html>
