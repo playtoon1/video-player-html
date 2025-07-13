@@ -85,28 +85,6 @@
             width: 100vw;
             height: 100vh;
         }
-        
-        /* Sibnet specific styles */
-        .sibnet-player {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        
-        .sibnet-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
-        }
-        
-        /* Hide unnecessary elements for all platforms */
-        .ads, .advertisement, .banner, .popup, .overlay,
-        .social-share, .related-videos, .comments,
-        .sidebar, .header, .footer, .navigation {
-            display: none !important;
-            visibility: hidden !important;
-        }
     </style>
 </head>
 <body>
@@ -185,21 +163,14 @@
             return url.match(/\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)(\?.*)?$/i);
         }
         
-        // Sibnet Player - Özel işleme
+        // Sibnet Player - Orijinal URL'yi doğrudan kullan
         function createSibnetPlayer(url, container, loading) {
             console.log('Sibnet player oluşturuluyor:', url);
             
-            // Sibnet URL'sini düzenle
+            // Orijinal URL'yi doğrudan kullan
             let embedUrl = url;
             
-            // Eğer shell.php linki ise, doğrudan kullan
-            if (url.includes('shell.php?videoid=')) {
-                // URL'yi embed formatına çevir
-                embedUrl = url.replace('shell.php?videoid=', 'video_ext.php?videoid=');
-            }
-            
             const iframe = document.createElement('iframe');
-            iframe.className = 'sibnet-frame';
             iframe.src = embedUrl;
             iframe.allowFullscreen = true;
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
@@ -207,103 +178,49 @@
             iframe.setAttribute('mozallowfullscreen', 'true');
             iframe.setAttribute('allowfullscreen', 'true');
             
-            // Sibnet için özel User-Agent
-            iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-presentation');
+            // Sibnet için referrer policy ekle
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
             
             // Loading event handlers
             iframe.onload = function() {
                 console.log('Sibnet iframe yüklendi');
                 loading.style.display = 'none';
                 
-                // Sibnet'e özel CSS enjekte et
+                // Sibnet'e özel optimizasyon
                 setTimeout(() => {
-                    injectSibnetStyles(iframe);
+                    optimizeSibnetPlayer(iframe);
                 }, 1000);
             };
             
             iframe.onerror = function() {
                 console.error('Sibnet iframe yüklenemedi');
-                showError('Sibnet video yüklenemedi. Alternatif yöntem deneniyor...');
-                
-                // Alternatif yöntem: Direkt URL'yi dene
-                createAlternativeSibnetPlayer(url, container, loading);
+                showError('Sibnet video yüklenemedi.');
             };
             
-            // Timeout handler
+            // Timeout handler - 15 saniye
             setTimeout(() => {
                 if (loading.style.display !== 'none') {
-                    console.log('Sibnet yükleme timeout, alternatif yöntem deneniyor');
-                    createAlternativeSibnetPlayer(url, container, loading);
+                    console.log('Sibnet yükleme timeout');
+                    showError('Video yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.');
                 }
-            }, 10000);
+            }, 15000);
             
             container.appendChild(iframe);
         }
         
-        // Alternatif Sibnet Player
-        function createAlternativeSibnetPlayer(url, container, loading) {
-            // Mevcut iframe'i temizle
-            const existingIframe = container.querySelector('iframe');
-            if (existingIframe) {
-                existingIframe.remove();
-            }
-            
-            const iframe = document.createElement('iframe');
-            iframe.className = 'sibnet-frame';
-            iframe.src = url; // Orijinal URL'yi kullan
-            iframe.allowFullscreen = true;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
-            
-            iframe.onload = function() {
-                loading.style.display = 'none';
-            };
-            
-            iframe.onerror = function() {
-                showError('Video yüklenemedi. Lütfen daha sonra tekrar deneyin.');
-            };
-            
-            container.appendChild(iframe);
-        }
-        
-        // Sibnet için özel CSS enjekte etme
-        function injectSibnetStyles(iframe) {
+        // Sibnet oynatıcısını optimize et
+        function optimizeSibnetPlayer(iframe) {
             try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc) {
-                    const style = iframeDoc.createElement('style');
-                    style.textContent = `
-                        body {
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            background: #000 !important;
-                            overflow: hidden !important;
-                        }
-                        
-                        video {
-                            width: 100% !important;
-                            height: 100% !important;
-                            object-fit: contain !important;
-                        }
-                        
-                        .ads, .advertisement, .banner, .popup,
-                        .social, .share, .related, .comments {
-                            display: none !important;
-                            visibility: hidden !important;
-                        }
-                        
-                        /* Sibnet player controls */
-                        .sibnet-controls {
-                            position: absolute !important;
-                            bottom: 10px !important;
-                            left: 50% !important;
-                            transform: translateX(-50%) !important;
-                            z-index: 9999 !important;
-                        }
-                    `;
-                    iframeDoc.head.appendChild(style);
-                }
+                // Iframe'in içindeki elemanlara erişim CORS nedeniyle sınırlı
+                // Bu yüzden sadece iframe'in kendisini optimize ediyoruz
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.background = '#000';
+                
+                console.log('Sibnet player optimized');
             } catch (error) {
-                console.log('Sibnet CSS enjekte edilemedi (CORS):', error);
+                console.log('Sibnet optimizasyonu yapılamadı (CORS):', error);
             }
         }
         
