@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Player</title>
+    <title>Sibnet Video Player</title>
     <style>
         * {
             margin: 0;
@@ -27,11 +27,11 @@
             justify-content: center;
         }
         
-        iframe, video {
+        iframe {
             width: 100%;
             height: 100%;
             border: none;
-            object-fit: contain;
+            background: #000;
         }
         
         .loading {
@@ -42,6 +42,7 @@
             color: #fff;
             font-size: 18px;
             z-index: 1000;
+            text-align: center;
         }
         
         .error {
@@ -85,16 +86,25 @@
             width: 100vw;
             height: 100vh;
         }
+        
+        /* Sibnet için özel optimizasyonlar */
+        .sibnet-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
     <div class="video-container" id="videoContainer">
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            Video yükleniyor...
+            Sibnet video yükleniyor...
         </div>
         <div class="error" id="error" style="display: none;">
-            Video yüklenemedi. Lütfen daha sonra tekrar deneyin.
+            Sibnet video yüklenemedi. Lütfen daha sonra tekrar deneyin.
         </div>
     </div>
 
@@ -102,40 +112,21 @@
         // URL'den video parametresini al
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('url');
-        const videoTitle = urlParams.get('title') || 'Video';
+        const videoTitle = urlParams.get('title') || 'Sibnet Video';
         
         // Sayfa başlığını güncelle
         document.title = videoTitle;
         
+        // URL kontrolü
         if (!videoUrl) {
             showError('Video URL\'si bulunamadı.');
             return;
         }
         
-        // Video tipini belirle ve oynatıcı oluştur
-        function createPlayer() {
-            const container = document.getElementById('videoContainer');
-            const loading = document.getElementById('loading');
-            
-            try {
-                if (isSibnetUrl(videoUrl)) {
-                    createSibnetPlayer(videoUrl, container, loading);
-                } else if (isYouTubeUrl(videoUrl)) {
-                    createYouTubePlayer(videoUrl, container, loading);
-                } else if (isVimeoUrl(videoUrl)) {
-                    createVimeoPlayer(videoUrl, container, loading);
-                } else if (isDailymotionUrl(videoUrl)) {
-                    createDailymotionPlayer(videoUrl, container, loading);
-                } else if (isDirectVideoUrl(videoUrl)) {
-                    createDirectVideoPlayer(videoUrl, container, loading);
-                } else {
-                    // Genel iframe player
-                    createGenericPlayer(videoUrl, container, loading);
-                }
-            } catch (error) {
-                console.error('Player oluşturma hatası:', error);
-                showError('Video oynatıcı oluşturulamadı.');
-            }
+        // Sadece Sibnet URL'lerini kabul et
+        if (!isSibnetUrl(videoUrl)) {
+            showError('Bu sayfa sadece Sibnet videoları için tasarlanmıştır.');
+            return;
         }
         
         // Sibnet URL kontrolü
@@ -143,190 +134,74 @@
             return url.includes('sibnet.ru') || url.includes('shell.php?videoid=');
         }
         
-        // YouTube URL kontrolü
-        function isYouTubeUrl(url) {
-            return url.includes('youtube.com') || url.includes('youtu.be');
-        }
-        
-        // Vimeo URL kontrolü
-        function isVimeoUrl(url) {
-            return url.includes('vimeo.com');
-        }
-        
-        // Dailymotion URL kontrolü
-        function isDailymotionUrl(url) {
-            return url.includes('dailymotion.com');
-        }
-        
-        // Direct video URL kontrolü
-        function isDirectVideoUrl(url) {
-            return url.match(/\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)(\?.*)?$/i);
-        }
-        
-        // Sibnet Player - Orijinal URL'yi doğrudan kullan
-        function createSibnetPlayer(url, container, loading) {
-            console.log('Sibnet player oluşturuluyor:', url);
+        // Sibnet Player oluştur
+        function createSibnetPlayer() {
+            const container = document.getElementById('videoContainer');
+            const loading = document.getElementById('loading');
             
-            // Orijinal URL'yi doğrudan kullan
-            let embedUrl = url;
+            console.log('Sibnet player oluşturuluyor:', videoUrl);
             
-            const iframe = document.createElement('iframe');
-            iframe.src = embedUrl;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
-            iframe.setAttribute('webkitallowfullscreen', 'true');
-            iframe.setAttribute('mozallowfullscreen', 'true');
-            iframe.setAttribute('allowfullscreen', 'true');
-            
-            // Sibnet için referrer policy ekle
-            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-            
-            // Loading event handlers
-            iframe.onload = function() {
-                console.log('Sibnet iframe yüklendi');
-                loading.style.display = 'none';
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'sibnet-frame';
+                iframe.src = videoUrl; // Orijinal URL'yi doğrudan kullan
+                iframe.allowFullscreen = true;
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+                iframe.setAttribute('webkitallowfullscreen', 'true');
+                iframe.setAttribute('mozallowfullscreen', 'true');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
                 
-                // Sibnet'e özel optimizasyon
+                // Sibnet için özel User-Agent
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-presentation');
+                
+                // Loading event handlers
+                iframe.onload = function() {
+                    console.log('Sibnet iframe başarıyla yüklendi');
+                    loading.style.display = 'none';
+                    
+                    // Oynatıcıyı optimize et
+                    setTimeout(() => {
+                        optimizeSibnetPlayer(iframe);
+                    }, 1000);
+                };
+                
+                iframe.onerror = function() {
+                    console.error('Sibnet iframe yüklenemedi');
+                    showError('Sibnet video yüklenemedi. Lütfen bağlantınızı kontrol edin.');
+                };
+                
+                // Timeout handler - 20 saniye
                 setTimeout(() => {
-                    optimizeSibnetPlayer(iframe);
-                }, 1000);
-            };
-            
-            iframe.onerror = function() {
-                console.error('Sibnet iframe yüklenemedi');
-                showError('Sibnet video yüklenemedi.');
-            };
-            
-            // Timeout handler - 15 saniye
-            setTimeout(() => {
-                if (loading.style.display !== 'none') {
-                    console.log('Sibnet yükleme timeout');
-                    showError('Video yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.');
-                }
-            }, 15000);
-            
-            container.appendChild(iframe);
+                    if (loading.style.display !== 'none') {
+                        console.log('Sibnet yükleme zaman aşımı');
+                        showError('Video yükleme zaman aşımına uğradı. Lütfen sayfayı yenileyin.');
+                    }
+                }, 20000);
+                
+                container.appendChild(iframe);
+                
+            } catch (error) {
+                console.error('Sibnet player oluşturma hatası:', error);
+                showError('Video oynatıcı oluşturulamadı.');
+            }
         }
         
         // Sibnet oynatıcısını optimize et
         function optimizeSibnetPlayer(iframe) {
             try {
-                // Iframe'in içindeki elemanlara erişim CORS nedeniyle sınırlı
-                // Bu yüzden sadece iframe'in kendisini optimize ediyoruz
+                // Iframe'in temel stillerini ayarla
                 iframe.style.width = '100%';
                 iframe.style.height = '100%';
                 iframe.style.border = 'none';
                 iframe.style.background = '#000';
+                iframe.style.objectFit = 'contain';
                 
-                console.log('Sibnet player optimized');
+                console.log('Sibnet player optimizasyonu tamamlandı');
+                
             } catch (error) {
-                console.log('Sibnet optimizasyonu yapılamadı (CORS):', error);
+                console.log('Sibnet optimizasyonu sırasında hata (normal):', error);
             }
-        }
-        
-        // YouTube Player
-        function createYouTubePlayer(url, container, loading) {
-            let embedUrl = url;
-            
-            // Normal YouTube URL'sini embed URL'sine çevir
-            if (url.includes('youtube.com/watch?v=')) {
-                const videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1`;
-            } else if (url.includes('youtu.be/')) {
-                const videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1`;
-            }
-            
-            const iframe = document.createElement('iframe');
-            iframe.src = embedUrl;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            
-            iframe.onload = () => {
-                loading.style.display = 'none';
-            };
-            
-            container.appendChild(iframe);
-        }
-        
-        // Vimeo Player
-        function createVimeoPlayer(url, container, loading) {
-            let embedUrl = url;
-            
-            if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com')) {
-                const videoId = url.split('vimeo.com/')[1].split('?')[0];
-                embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=0&controls=1`;
-            }
-            
-            const iframe = document.createElement('iframe');
-            iframe.src = embedUrl;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-            
-            iframe.onload = () => {
-                loading.style.display = 'none';
-            };
-            
-            container.appendChild(iframe);
-        }
-        
-        // Dailymotion Player
-        function createDailymotionPlayer(url, container, loading) {
-            let embedUrl = url;
-            
-            if (url.includes('dailymotion.com/video/') && !url.includes('dailymotion.com/embed/')) {
-                const videoId = url.split('video/')[1].split('?')[0];
-                embedUrl = `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1&mute=0`;
-            }
-            
-            const iframe = document.createElement('iframe');
-            iframe.src = embedUrl;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'autoplay; fullscreen';
-            
-            iframe.onload = () => {
-                loading.style.display = 'none';
-            };
-            
-            container.appendChild(iframe);
-        }
-        
-        // Direct Video Player
-        function createDirectVideoPlayer(url, container, loading) {
-            const video = document.createElement('video');
-            video.src = url;
-            video.controls = true;
-            video.autoplay = true;
-            video.muted = false;
-            video.playsInline = true;
-            
-            video.onloadeddata = () => {
-                loading.style.display = 'none';
-            };
-            
-            video.onerror = () => {
-                showError('Video yüklenemedi.');
-            };
-            
-            container.appendChild(video);
-        }
-        
-        // Generic Player
-        function createGenericPlayer(url, container, loading) {
-            const iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'autoplay; fullscreen';
-            
-            iframe.onload = () => {
-                loading.style.display = 'none';
-            };
-            
-            iframe.onerror = () => {
-                showError('Video yüklenemedi.');
-            };
-            
-            container.appendChild(iframe);
         }
         
         // Hata göster
@@ -339,8 +214,8 @@
             error.style.display = 'block';
         }
         
-        // Sayfa yüklendiğinde oynatıcıyı oluştur
-        window.addEventListener('load', createPlayer);
+        // Sayfa yüklendiğinde Sibnet oynatıcıyı oluştur
+        window.addEventListener('load', createSibnetPlayer);
         
         // Fullscreen API
         function requestFullscreen() {
@@ -359,7 +234,7 @@
         if (window.innerHeight > window.innerWidth) {
             if (screen.orientation && screen.orientation.lock) {
                 screen.orientation.lock('landscape').catch(() => {
-                    console.log('Orientation lock failed');
+                    console.log('Orientation lock başarısız');
                 });
             }
         }
@@ -375,8 +250,14 @@
             }
         });
         
-        // Console log for debugging
-        console.log('Video Player initialized for URL:', videoUrl);
+        // Debug bilgisi
+        console.log('Sibnet Video Player başlatıldı:', videoUrl);
+        console.log('Video başlığı:', videoTitle);
+        
+        // Sayfa kapatılırken temizlik
+        window.addEventListener('beforeunload', () => {
+            console.log('Sibnet player kapatılıyor');
+        });
     </script>
 </body>
 </html>
