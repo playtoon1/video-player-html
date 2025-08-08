@@ -3,261 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sibnet Video Player</title>
+    <title>Sibnet Video Oynatıcı</title>
     <style>
-        * {
+        body {
+            background-color: #111;
+            color: white;
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            text-align: center;
         }
-        
-        body {
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
+        h1 {
+            font-size: 1.5em;
+            margin: 20px 0;
         }
-        
-        .video-container {
+        .video-wrapper {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding-bottom: 56.25%; /* 16:9 oran */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: black;
         }
-        
-        iframe {
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             border: none;
-            background: #000;
-        }
-        
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 18px;
-            z-index: 1000;
-            text-align: center;
-        }
-        
-        .error {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ff4444;
-            text-align: center;
-            font-size: 16px;
-            z-index: 1000;
-        }
-        
-        .spinner {
-            border: 4px solid #333;
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Fullscreen optimizations */
-        .video-container:-webkit-full-screen {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        .video-container:-moz-full-screen {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        .video-container:fullscreen {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        /* Sibnet için özel optimizasyonlar */
-        .sibnet-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
-            object-fit: contain;
         }
     </style>
 </head>
 <body>
-    <div class="video-container" id="videoContainer">
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            Sibnet video yükleniyor...
-        </div>
-        <div class="error" id="error" style="display: none;">
-            Sibnet video yüklenemedi. Lütfen daha sonra tekrar deneyin.
-        </div>
+
+    <h1>Sibnet Video Oynatıcı</h1>
+
+    <div class="video-wrapper">
+        <iframe src="https://video.sibnet.ru/shell.php?videoid=4702979"
+                allowfullscreen>
+        </iframe>
     </div>
 
-    <script>
-        // URL'den video parametresini al
-        const urlParams = new URLSearchParams(window.location.search);
-        const videoUrl = urlParams.get('url');
-        const videoTitle = urlParams.get('title') || 'Sibnet Video';
-        
-        // Sayfa başlığını güncelle
-        document.title = videoTitle;
-        
-        // URL kontrolü
-        if (!videoUrl) {
-            showError('Video URL\'si bulunamadı.');
-            return;
-        }
-        
-        // Sadece Sibnet URL'lerini kabul et
-        if (!isSibnetUrl(videoUrl)) {
-            showError('Bu sayfa sadece Sibnet videoları için tasarlanmıştır.');
-            return;
-        }
-        
-        // Sibnet URL kontrolü
-        function isSibnetUrl(url) {
-            return url.includes('sibnet.ru') || url.includes('shell.php?videoid=');
-        }
-        
-        // Sibnet Player oluştur
-        function createSibnetPlayer() {
-            const container = document.getElementById('videoContainer');
-            const loading = document.getElementById('loading');
-            
-            console.log('Sibnet player oluşturuluyor:', videoUrl);
-            
-            try {
-                const iframe = document.createElement('iframe');
-                iframe.className = 'sibnet-frame';
-                iframe.src = videoUrl; // Orijinal URL'yi doğrudan kullan
-                iframe.allowFullscreen = true;
-                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
-                iframe.setAttribute('webkitallowfullscreen', 'true');
-                iframe.setAttribute('mozallowfullscreen', 'true');
-                iframe.setAttribute('allowfullscreen', 'true');
-                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-                
-                // Sibnet için özel User-Agent
-                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-presentation');
-                
-                // Loading event handlers
-                iframe.onload = function() {
-                    console.log('Sibnet iframe başarıyla yüklendi');
-                    loading.style.display = 'none';
-                    
-                    // Oynatıcıyı optimize et
-                    setTimeout(() => {
-                        optimizeSibnetPlayer(iframe);
-                    }, 1000);
-                };
-                
-                iframe.onerror = function() {
-                    console.error('Sibnet iframe yüklenemedi');
-                    showError('Sibnet video yüklenemedi. Lütfen bağlantınızı kontrol edin.');
-                };
-                
-                // Timeout handler - 20 saniye
-                setTimeout(() => {
-                    if (loading.style.display !== 'none') {
-                        console.log('Sibnet yükleme zaman aşımı');
-                        showError('Video yükleme zaman aşımına uğradı. Lütfen sayfayı yenileyin.');
-                    }
-                }, 20000);
-                
-                container.appendChild(iframe);
-                
-            } catch (error) {
-                console.error('Sibnet player oluşturma hatası:', error);
-                showError('Video oynatıcı oluşturulamadı.');
-            }
-        }
-        
-        // Sibnet oynatıcısını optimize et
-        function optimizeSibnetPlayer(iframe) {
-            try {
-                // Iframe'in temel stillerini ayarla
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                iframe.style.background = '#000';
-                iframe.style.objectFit = 'contain';
-                
-                console.log('Sibnet player optimizasyonu tamamlandı');
-                
-            } catch (error) {
-                console.log('Sibnet optimizasyonu sırasında hata (normal):', error);
-            }
-        }
-        
-        // Hata göster
-        function showError(message) {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            
-            loading.style.display = 'none';
-            error.textContent = message;
-            error.style.display = 'block';
-        }
-        
-        // Sayfa yüklendiğinde Sibnet oynatıcıyı oluştur
-        window.addEventListener('load', createSibnetPlayer);
-        
-        // Fullscreen API
-        function requestFullscreen() {
-            const container = document.getElementById('videoContainer');
-            
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.mozRequestFullScreen) {
-                container.mozRequestFullScreen();
-            }
-        }
-        
-        // Otomatik landscape mode (mobil için)
-        if (window.innerHeight > window.innerWidth) {
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {
-                    console.log('Orientation lock başarısız');
-                });
-            }
-        }
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'f' || e.key === 'F') {
-                requestFullscreen();
-            } else if (e.key === 'Escape') {
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                }
-            }
-        });
-        
-        // Debug bilgisi
-        console.log('Sibnet Video Player başlatıldı:', videoUrl);
-        console.log('Video başlığı:', videoTitle);
-        
-        // Sayfa kapatılırken temizlik
-        window.addEventListener('beforeunload', () => {
-            console.log('Sibnet player kapatılıyor');
-        });
-    </script>
+    <p style="margin-top:20px;">
+        © 2025 - Sibnet Video Oynatıcı Demo
+    </p>
+
 </body>
 </html>
