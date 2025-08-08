@@ -40,6 +40,17 @@
     <h1>Sibnet Video Oynatıcı</h1>
 
     <div class="video-wrapper">
+        <div style="
+  position: absolute;
+  top: 0;      /* Bunu sen ayarlayacaksın */
+  left: 0;     /* Bunu sen ayarlayacaksın */
+  width: 100px;  /* Bunu sen ayarlayacaksın */
+  height: 50px;  /* Bunu sen ayarlayacaksın */
+  background: rgba(255, 255, 255, 0); /* Tam şeffaf */
+  pointer-events: all;  /* Tıklamaları engeller */
+  z-index: 10;  /* iframe üstünde olması için yeterince yüksek */
+"></div>
+
         <iframe src="https://video.sibnet.ru/shell.php?videoid=4702979"
                 allowfullscreen>
         </iframe>
